@@ -11,6 +11,6 @@ sed 's/;/\t/'g fastq_info.txt > fastq_locations.txt
 ```
 Now download the fastq files using the locations file using wget:
 ```
-while read -A line ; do wget ${line[1]} ; wget ${line[2]} ; done < fastq_locations.txt
+while read -A line ; do wget ${line[2]} ; wget ${line[3]} ; done < fastq_locations.txt
 ```
 
