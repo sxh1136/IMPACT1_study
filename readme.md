@@ -1,4 +1,4 @@
-#Downloading sequencing data from ENA
+# Downloading sequencing data from ENA
 Study: PRJNA533528
 
 Retrieve download info from ascension:
@@ -13,7 +13,7 @@ Now download the fastq files using the locations file using wget:
 ```
 while read -A line ; do wget ${line[2]} ; wget ${line[3]} ; done < fastq_locations.txt
 ```
-#Quality Control
-###Unzipping fastq files
+# Quality Control
+### Unzipping fastq files
 First of all, we need to decompress our fastq files using gzip. Using the GNU parallel command will decompress multiple files at once (according to how many cores we have).
 ```ls *.gz | parallel gunzip``` 
