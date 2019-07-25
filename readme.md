@@ -16,8 +16,12 @@ while read -A line ; do wget ${line[2]} ; wget ${line[3]} ; done < fastq_locatio
 # Quality Control
 ### Unzipping fastq files
 First of all, we need to decompress our fastq files using gzip. Using the GNU parallel command will decompress multiple files at once (according to how many cores we have).
-```ls *.gz | parallel gunzip``` 
+```
+ls *.gz | parallel gunzip
+``` 
 
 ### Fastqc
 Run Fastqc on all samples in parallel
-```for i in *.fastq; do echo "${i}"; done | parallel fastqc -o fastqc```
+```
+for i in *.fastq; do echo "${i}"; done | parallel fastqc -o fastqc
+```
