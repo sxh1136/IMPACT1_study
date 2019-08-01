@@ -24,6 +24,7 @@ while read -A line; do mv ${line[1]} ${line[2]}; done < SampleID_to_run-accessio
 There are also three missing fastq files on ENA, as well as one that was uploaded incorrectly (13-6929666) that can be downloaded from [here](https://www.dropbox.com/sh/tzgwrdf571k3p5s/AADxy8aVGLEF_ZavbUiW9SCya?dl=0)
  
 # Quality Control
+Samples 13-6929545, 13-6929634 and 13-6929899 ommitted from further analysis as they contain very little data (<100,000 reads). 
 ### Unzipping fastq files
 First of all, we need to decompress our fastq files using gzip. Using the GNU parallel command will decompress multiple files at once (according to how many cores we have).
 ```
@@ -35,3 +36,10 @@ Run Fastqc on all samples in parallel
 ```
 for i in *.fastq; do echo "${i}"; done | parallel fastqc -o fastqc
 ```
+
+### Remove exact duplicates
+Although not strictly necessary, as our duplicate levels are quite high it is desirable to remove exact duplicates to lessen downstream computational load. We can do this with the -derep 1 flag in prinseq-lite.
+
+```
+for i in *_1.fastq; do prinseq-lite.pl -fastq ${i} -fastq2 ${i/_1.fastq/_2.fastq} -out_format 3 -derep 1 -out_bad null; done
+``` 
