@@ -16,7 +16,7 @@ Now download the fastq files using the locations file using wget:
 while read -A line ; do wget ${line[2]} ; wget ${line[3]} ; done < fastq_locations.txt
 ```
 
-As the fastq files are named according to their ENA sample accession, they need to bed renamed. The file SampleID_to_run-accession.txt is a tsv file containing the sample accessions and their corresponding sample IDs. A while loop is used to do this:
+As the fastq files are named according to their ENA sample accession, they need to be renamed. The file SampleID_to_run-accession.txt is a tsv file containing the sample accessions and their corresponding sample IDs. A while loop is used to do this:
 ```
 while read -A line; do mv ${line[1]} ${line[2]}; done < SampleID_to_run-accession.txt
 ``` 
