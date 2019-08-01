@@ -21,7 +21,7 @@ As the fastq files are named according to their ENA sample accession, they need 
 while read -A line; do mv ${line[1]} ${line[2]}; done < SampleID_to_run-accession.txt
 ``` 
 
-There are also four missing fastq files on ENA that can be downloaded from [here](https://www.dropbox.com/sh/tzgwrdf571k3p5s/AADxy8aVGLEF_ZavbUiW9SCya?dl=0)
+There are also three missing fastq files on ENA, as well as one that was uploaded incorrectly (13-6929666) that can be downloaded from [here](https://www.dropbox.com/sh/tzgwrdf571k3p5s/AADxy8aVGLEF_ZavbUiW9SCya?dl=0)
  
 # Quality Control
 ### Unzipping fastq files
