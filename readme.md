@@ -59,5 +59,5 @@ $ for i in *_1_clean.fastq; do fq2fa --merge --filter ${i} ${i/_1_clean.fastq/_2
 
 To run the assembler with default parameters:
 ```
-for  i in *fasta; do echo " idba_ud -r ${i} -o ${i/merged.fasta/idba_ud} --num_threads 8";done
+for  i in *fasta; do idba_ud -r ${i} -o ${i/merged.fasta/idba_ud} --num_threads 8;done
 ```
