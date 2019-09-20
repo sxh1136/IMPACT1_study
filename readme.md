@@ -49,12 +49,12 @@ $ for i in *.fastq; do mv ${i} ${i/prinseq*fastq/clean.fastq}; done
 ```
 
 # Metagenome Assembly
-
+### IDBA
 ~~Before using IDBA_UD for sequences longer than 100bp you need to increase the kMaxShortSequence value in src/sequence/shortsequence.h. This needs to be done before compiling the software.~~
 
 ~~IDBA_UD also requires paired reads to be in a single merged fasta format. They provide a fq2fa script for this:~~
 
-~~$ for i in *_1_clean.fastq; do fq2fa --merge --filter ${i} ${i/_1_clean.fastq/_2_clean.fastq} ${i/_1_clean.fastq/_merged.fasta};done~~  
+~~for i in *_1_clean.fastq; do fq2fa --merge --filter ${i} ${i/_1_clean.fastq/_2_clean.fastq} ${i/_1_clean.fastq/_merged.fasta};done~~  
 
 ~~To run the assembler with default parameters:~~
 
@@ -63,6 +63,7 @@ $ for i in *.fastq; do mv ${i} ${i/prinseq*fastq/clean.fastq}; done
 
 ~~IDBA is poorly documented and insert size error could not be solved.~~
 
+### metaSPAdes
 Instead samples will be assembled with metaSPAdes instead
 
 ```
