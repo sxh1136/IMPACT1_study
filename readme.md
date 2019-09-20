@@ -54,19 +54,17 @@ $ for i in *.fastq; do mv ${i} ${i/prinseq*fastq/clean.fastq}; done
 
 ~~IDBA_UD also requires paired reads to be in a single merged fasta format. They provide a fq2fa script for this:~~
 
-```
-~~$ for i in *_1_clean.fastq; do fq2fa --merge --filter ${i} ${i/_1_clean.fastq/_2_clean.fastq} ${i/_1_clean.fastq/_merged.fasta};done~~
-```  
+~~$ for i in *_1_clean.fastq; do fq2fa --merge --filter ${i} ${i/_1_clean.fastq/_2_clean.fastq} ${i/_1_clean.fastq/_merged.fasta};done~~  
 
 ~~To run the assembler with default parameters:~~
-```
+
 ~~for  i in *fasta; do idba_ud -r ${i} -o ${i/merged.fasta/idba_ud} --num_threads 8;done~~
-```
+
 
 ~~IDBA is poorly documented and insert size error could not be solved.~~
 
-~~Instead samples will be assembled with metaSPAdes instead~~
+Instead samples will be assembled with metaSPAdes instead
 
 ```
-~~for i in *1_clean.fastq; do /home/linuxbrew/.linuxbrew/bin/spades.py --meta -o ${i/1_clean.fastq/metaspades} -1 ${i} -2 ${i/_1_clean.fastq/_2_clean.fastq}; done~~
+for i in *1_clean.fastq; do /home/linuxbrew/.linuxbrew/bin/spades.py --meta -o ${i/1_clean.fastq/metaspades} -1 ${i} -2 ${i/_1_clean.fastq/_2_clean.fastq}; done
 ```  
