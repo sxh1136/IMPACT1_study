@@ -68,4 +68,24 @@ Instead samples will be assembled with metaSPAdes instead
 
 ```
 for i in *1_clean.fastq; do /home/linuxbrew/.linuxbrew/bin/spades.py --meta -o ${i/1_clean.fastq/metaspades} -1 ${i} -2 ${i/_1_clean.fastq/_2_clean.fastq}; done
-```  
+```
+
+# Phage Contig Identification
+Predict genes with MetaGeneMark outputting genes in fasta format (-D) and gff (-f G):
+
+```
+for i in *.fasta; do prodigal -a ${i/contigs.fasta/prodigal.trans} -p meta -i ${i}; done
+```
+
+Filter out gene predictions that are smaller than 60 aa:
+
+```
+for i in *.trans; do bioawk -c fastx '{ if(length($seq) > 60) { print ">"$name; print $seq }}' ${i} > ${i/trans/filtered};done
+```
+
+Cluster genes using CD-HIT:
+```
+for i in *.filtered; do cd-hit -c 0.6 -aS 0.8 -g 1 -n 4 -d 0 -i ${i} -o ${i/prodigal.filtered/cd-hit}; done
+```
+
+
