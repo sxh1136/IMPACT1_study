@@ -95,7 +95,7 @@ for i in *.cd-hit; do hmmsearch -E 0.001 -A ${i/cd-hit/hmmsearch.sto} /home/ubun
 # Phage Identification in metagenomic reads
 Loop FastViromeExplorer for all paired end reads against the provided phage kallisto index (created from NCBI RefSeq) with a coverage cutoff of 40% (default 10%)
 ```
-while read -A line; do java -cp bin FastViromeExplorer -1 /path_to_fastqs/${line[1]} -2 /path_to_fastqs/${line[2]} -i phage-kallisto-index-k31.idx -o /path_to_output/${line[1]/_1.fastq/_FVE} -co 0.4 ;done < fastq_list.txt
+while read -A line; do java -cp bin FastViromeExplorer -1 /path_to_fastqs/${line[1]} -2 /path_to_fastqs/${line[2]} -i phage-kallisti-index-k31.idx -o /path_to_output/${line[1]/_1.fastq/_FVE} -co 0.4 ;done < fastq_list.txt
 ```
 However this phage database is very limited containing only ~2000 genomes from refseq. We can instead use a database curated by Andrew Millard - http://millardlab.org/bioinformatics/bacteriophage-genomes/. This database contains duplicated genomes so we use dedupe to remove any genomes with 100% identity to another.
 
@@ -128,8 +128,10 @@ cat number_of_reads.txt | while read eachline;
 	echo $sname; echo $div;
 	#cat each data-containing tsv and use awk to place the new column.
 	#store result in a new tsv
-	cat ${sname}_millard_FVE_sorted_abundance.tsv| awk -v div="$div" '{FS ="\t"} {OFS ="\t"} {print $1,$2,$3,$3/div}' > ${sname}_new.tsv;
+	cat ${sname}_millard_R95_FVE.tsv| awk -v div="$div" '{FS ="\t"} {OFS ="\t"} {print $1,$2,$3,$3/div}' > ${sname}_new.tsv;
     done
+
+find . -size 0 -delete
 ```
 This returns us a new column that has the header "0". This will probably freak out some programs so we can replace it with "rpm". Note we make sure to only replace the first instance of "0". 
 ```
@@ -141,15 +143,15 @@ awk -i inplace '{FS ="\t"} {OFS ="\t"} {print $1, $2/1000}' millard-phage-genome
 ```
 Pass the tsv file and genome length list to coverage.py to divide the rpm by the respective genome length to get rpkm
 ```
-for i in *tsv;do ./coverage.py ${i} millard-phage-genome-size.txt > ${i/new.tsv/coverage.tsv};done
+for i in *tsv;do ./coverage.py ${i} millard-phage-R95_genome-size.txt > ${i/new.tsv/coverage.tsv};done
 ```
 To replace #VirusIdentifier with Phage (as hashtags are awkward)
 ```
 for i in *tsv;do sed -i -e 's/#VirusIdentifier/Phage/' ${i};done
 ```
-Then extarct columns 1 and 5:
+We now want to combine columns 1 and 2 so that it reads Phage_Name(Accession) as some share the same phage name.
 ```
-for i in *tsv;do awk '{FS ="\t"} {OFS ="\t"} {print $1,$5}' ${i} > ${i/.tsv/_only.tsv};done
+for i in *tsv; do awk '{FS ="\t"} {OFS ="\t"} {print $2"("$1")",$5}' ${i} > ${i/.tsv/_only.tsv};done
 ```
 Rename file names by Day in ICU and then replace rpkm in each file with Day in ICU so they can be merged in R on this basis.
 ```
