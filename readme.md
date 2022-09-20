@@ -24,7 +24,7 @@ $ while read -A line; do mv ${line[1]} ${line[2]}; done < SampleID_to_run-access
 There are also three missing fastq files on ENA, as well as one that was uploaded incorrectly (13-6929666) that can be downloaded from [here](https://www.dropbox.com/sh/tzgwrdf571k3p5s/AADxy8aVGLEF_ZavbUiW9SCya?dl=0)
  
 # Quality Control
-Samples 13-6929545, 13-6929634 and 13-6929899 ommitted from further analysis as they contain very little data (<100,000 reads). 
+Samples 13-6929545, 13-6929633, 13-6929634 and 13-6929899 ommitted from further analysis as they contain very little data (<100,000 reads). 
 ### Unzipping fastq files
 First of all, we need to decompress our fastq files using gzip. Using the GNU parallel command will decompress multiple files at once (according to how many cores we have).
 ```
@@ -70,91 +70,11 @@ Instead samples will be assembled with metaSPAdes instead
 for i in *1_clean.fastq; do /home/linuxbrew/.linuxbrew/bin/spades.py --meta -o ${i/1_clean.fastq/metaspades} -1 ${i} -2 ${i/_1_clean.fastq/_2_clean.fastq}; done
 ```
 
-# Phage Contig Identification
-Predict genes with MetaGeneMark outputting genes in fasta format (-D) and gff (-f G):
-
+### metaphlan
+Run metaphlan to get non-viral abundance estimates. (Running with add-viruses didn't really change the results. Metaphlan not great at detecting viruses). Second line moves metaphlan outputs into patient specific directories
 ```
-for i in *.fasta; do prodigal -a ${i/contigs.fasta/prodigal.trans} -p meta -i ${i}; done
-```
+for i in *_1_*gz;do echo "metaphlan ${i},${i/_1_/_2_} --bowtie2out ${i/_1_clean.fastq.gz/_bowtie2out} --nproc 16 --input_type fastq --unclassified_estimation -o ${i/_1_clean.fastq.gz/_metaphlan.txt}";done
 
-Filter out gene predictions that are smaller than 60 aa:
-
-```
-for i in *.trans; do bioawk -c fastx '{ if(length($seq) > 60) { print ">"$name; print $seq }}' ${i} > ${i/trans/filtered};done
+for i in patient*txt; do while read -A line; do cp ${line}_metaphlan.txt ${i/.txt/};done < ${i};done
 ```
 
-Cluster genes using CD-HIT:
-```
-for i in *.filtered; do cd-hit -c 0.6 -aS 0.8 -g 1 -n 4 -d 0 -i ${i} -o ${i/prodigal.filtered/cd-hit}; done
-```
-Search for sequence homologs with HMMER
-```
-for i in *.cd-hit; do hmmsearch -E 0.001 -A ${i/cd-hit/hmmsearch.sto} /home/ubuntu/phageome/AllvogHMMprofiles/AllVOG.hmm ${i};done
-```
-
-# Phage Identification in metagenomic reads
-Loop FastViromeExplorer for all paired end reads against the provided phage kallisto index (created from NCBI RefSeq) with a coverage cutoff of 40% (default 10%)
-```
-while read -A line; do java -cp bin FastViromeExplorer -1 /path_to_fastqs/${line[1]} -2 /path_to_fastqs/${line[2]} -i phage-kallisti-index-k31.idx -o /path_to_output/${line[1]/_1.fastq/_FVE} -co 0.4 ;done < fastq_list.txt
-```
-However this phage database is very limited containing only ~2000 genomes from refseq. We can instead use a database curated by Andrew Millard - http://millardlab.org/bioinformatics/bacteriophage-genomes/. This database contains duplicated genomes so we use dedupe to remove any genomes with 100% identity to another.
-
-```
-dedupe.sh in=28Jan2020.fasta out=28Jan2020_deduped.fa ac=f
-# If you want to remove deplicates with min identity of 95%
-dedupe.sh in=28Jan2020.fasta out=28Jan2020_R95_deduped.fa minidentity=95
-```
-This can then be indexed by Kallisto and used for FVE like above
-```
-kallisto index -i millard-phage_index.idx -db 28Jan2020_deduped.fa
-```
-FVE returns a sorted tsv file for each read pair containing four columns. We can remove column 3 in the same command as this is empty. 
-```
-for i in *tsv; do awk -i inplace '{FS ="\t"} {OFS ="\t"} {print $1,$2,$4}' ${i};done
-```
-To get your sample per million scaling factor take your "number_of_reads.txt" file and divide the second column by 1,000,000.
-```
-awk -i inplace '{print $1,$2,$2/1000000}' number_of_reads.txt
-```
-Now you want to divide your estimated read counts in each tsv by the corresponding per million scaling factor. We can do this with this script:
-```
-cat number_of_reads.txt | while read eachline;
-    #echo the line to see what I'm working with
-    do echo $eachline;
-	#name some variables from each column of each line
-	sname=`echo $eachline| awk '{print $1}'`;
-	div=`echo $eachline| awk '{print $3}'`;
-	#echo my new variables to see that it worked
-	echo $sname; echo $div;
-	#cat each data-containing tsv and use awk to place the new column.
-	#store result in a new tsv
-	cat ${sname}_millard_R95_FVE.tsv| awk -v div="$div" '{FS ="\t"} {OFS ="\t"} {print $1,$2,$3,$3/div}' > ${sname}_new.tsv;
-    done
-
-find . -size 0 -delete
-```
-This returns us a new column that has the header "0". This will probably freak out some programs so we can replace it with "rpm". Note we make sure to only replace the first instance of "0". 
-```
-for i in *tsv; do sed -i -e '0,/0/ s/0/rpm/' ${i};done
-```
-Take your file containing all the IDs and genome lengths in your database. We will divide the genome lengths by 1000 to convert them into kilobase. 
-```
-awk -i inplace '{FS ="\t"} {OFS ="\t"} {print $1, $2/1000}' millard-phage-genome-size.txt
-```
-Pass the tsv file and genome length list to coverage.py to divide the rpm by the respective genome length to get rpkm
-```
-for i in *tsv;do ./coverage.py ${i} millard-phage-R95_genome-size.txt > ${i/new.tsv/coverage.tsv};done
-```
-To replace #VirusIdentifier with Phage (as hashtags are awkward)
-```
-for i in *tsv;do sed -i -e 's/#VirusIdentifier/Phage/' ${i};done
-```
-We now want to combine columns 1 and 2 so that it reads Phage_Name(Accession) as some share the same phage name.
-```
-for i in *tsv; do awk '{FS ="\t"} {OFS ="\t"} {print $2"("$1")",$5}' ${i} > ${i/.tsv/_only.tsv};done
-```
-Rename file names by Day in ICU and then replace rpkm in each file with Day in ICU so they can be merged in R on this basis.
-```
-while read -A line; do mv ${line[1]}_coverage_only.tsv ${line[2]}_coverage_only.tsv;done < sample_2_day.txt
-for i in *only.tsv; do sed -i 's@rpkm@'${i/_coverage_only.tsv}'@g' ${i};done
-```
