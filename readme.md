@@ -71,10 +71,19 @@ for i in *1_clean.fastq; do /home/linuxbrew/.linuxbrew/bin/spades.py --meta -o $
 ```
 
 ### metaphlan
-Run metaphlan to get non-viral abundance estimates. (Running with add-viruses didn't really change the results. Metaphlan not great at detecting viruses). Second line moves metaphlan outputs into patient specific directories
+Run metaphlan to get non-viral abundance estimates. (Running with add-viruses didn't really change the results. Metaphlan not great at detecting viruses). 
 ```
+# Run metaphlan
 for i in *_1_*gz;do echo "metaphlan ${i},${i/_1_/_2_} --bowtie2out ${i/_1_clean.fastq.gz/_bowtie2out} --nproc 16 --input_type fastq --unclassified_estimation -o ${i/_1_clean.fastq.gz/_metaphlan.txt}";done
-
+# Move metaphlan output into patient specific directories
 for i in patient*txt; do while read -A line; do cp ${line}_metaphlan.txt ${i/.txt/};done < ${i};done
+# Merge metaphlan tables for each patient
+for i in patient_*;do merge_metaphlan_tables.py ${i}/*metaphlan.txt > ${i}_metaphlan.txt;done
+# Extract species lines for merged metaphlan tables
+for i in *metaphlan.txt; do awk 'NR==2' ${i} > ${i/metaphlan/metaphlan_species}; grep -E "(s__)|(^ID)" ${i} | grep -v "t__" | sed 's/^.*s__//g' >> ${i/metaphlan/metaphlan_species};done
+# Remove metaphlan tag
+for i in *species*; do sed -i 's/_metaphlan//g' ${i};done
+# Replace sample IDs with days in ICU
+for i in *species.txt; do awk 'NR == FNR {T[$1] = $3; next} {for (t in T) gsub (t, T[t])} 1' sample-id_to_day.txt ${i} > ${i/.txt/_dayICU.txt};done
 ```
 
